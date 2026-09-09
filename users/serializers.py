@@ -1,7 +1,9 @@
-from django.contrib.auth.models import User
+# from django.contrib.auth.models import User
 from rest_framework import serializers
 
-class UserSerializer(serializers.HyperlinkedModelSerializer): 
+from models import User
+
+class UserSerializer(serializers.ModelSerializer): 
     class Meta : 
         model = User
         fields = [
@@ -13,6 +15,7 @@ class UserSerializer(serializers.HyperlinkedModelSerializer):
             "is_active",
             "is_staff",
             "is_superuser",
+            "role",
             "date_joined",
             "last_login",
         ]
