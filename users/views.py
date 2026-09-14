@@ -4,6 +4,9 @@ from django.contrib.auth.models import Group
 from django.contrib.auth.password_validation import validate_password
 from django.shortcuts import get_object_or_404
 
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
+
 from rest_framework import views, viewsets
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import Token
@@ -22,6 +25,16 @@ from .serializers import UserCreationSerializer, UserLoginSerializer, UserSerial
 class UserLoginView(views.APIView):
     permission_classes = []
     serializer_class = UserLoginSerializer
+
+    @extend_schema(
+        request=UserLoginSerializer,
+        responses={
+             200: OpenApiTypes.OBJECT,
+             400: "Bad request",
+             401: "Invalid credentials were provided.",
+             500: "Internal server error.",
+        },
+    )
 
     def post(self: views, request: views.Request) -> Response: 
         serializer = UserLoginSerializer(data=request.data)
@@ -60,6 +73,17 @@ class UserViewSet(viewsets.ViewSet):
 
         return [permission() for permission in self.permission_classes]
 
+    @extend_schema(
+        request=UserCreationSerializer,
+        responses={
+            201: UserSerializer,
+            400: "Bad request",
+            401: "Authentication credentials were not provided",
+            403: "You do not have permission to perform this action.",
+            500: "Internal server error.",
+        },
+    )
+
     def create(self, request):
         user = User(**request.data)
         validate_password(request.data.get("password", ""),user=user)
@@ -95,17 +119,46 @@ class UserViewSet(viewsets.ViewSet):
         
         return Response(serializer.errors, status=400)
 
+    @extend_schema(
+        responses= {
+            200: UserSerializer,
+            400: "Bad request",
+            401: "Authentication credentials were not provided",
+            500: "Internal server error",
+        },
+    )
+
     def list(self, _):
         users = User.objects.all()
         serializer = UserSerializer(users, many=True)
 
         return Response(serializer.data)
+
+    @extend_schema(
+        responses={
+            200: UserSerializer,
+            400: "Bad request",
+            401: "Authentication credentials were not provided",
+            404: "User not found",
+            500: "Internal server error",
+        },
+    )
     
     def retrieve(self, _, pk=None):
         user = get_object_or_404(User, id=pk)
         serializer = UserSerializer(user)
 
         return Response(serializer.data)
+
+    @extend_schema(
+        responses={
+            200: UserSerializer,
+            400: "Bad request",
+            401: "Authentication credentials were not provided",
+            403: "You don't have permission to perform this action",
+            500: "Internal server error",
+        },
+    )
     
     def update(self, request, pk=None):
         user = get_object_or_404(User, id=pk)
@@ -118,6 +171,17 @@ class UserViewSet(viewsets.ViewSet):
         
         return Response(serializer.errors, status=400)
 
+    @extend_schema(
+        responses={
+            200: UserSerializer,
+            400: "Bad request",
+            401: "Authentication credentials were not provided",
+            403: "You don't have permission to perform this action",
+            404: "User not found",
+            500: "Internal server error",
+        },
+    )
+
     def partial_update(self, request, pk=None):
         user = get_object_or_404(User, id=pk)
         serializer = UserSerializer(user, data=request.data, partial=True)
@@ -128,6 +192,17 @@ class UserViewSet(viewsets.ViewSet):
             return Response(UserSerializer(user).data)
 
         return Response(serializer.errors, status=400)
+
+    @extend_schema(
+        responses={
+            204: None,
+            400: "Bad request",
+            401: "Authentication credentials were not provided",
+            403: "You don't have permission to perform this action",
+            404: "User not found",
+            500: "Internal server error",
+        },
+    )
 
     def destroy(self, _, pk=None):
         user = get_object_or_404(User, id=pk)
