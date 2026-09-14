@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'rest_framework_simplejwt',
+    'drf_spectacular',
     'users',
 ]
 
@@ -145,6 +146,7 @@ REST_FRAMEWORK = {
     "DEFAULT_PAGINATION_CLASS":
     "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE":10,
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
@@ -152,4 +154,11 @@ REST_FRAMEWORK = {
         #a confirmer avec ludo et jereome
         "rest_framework.permissions.IsAuthenticated",
     ),
+}
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Django USers REST API",
+    "DESCRIPTION": "REST API for managing users in a Django application",
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,  
 }
