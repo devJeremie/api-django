@@ -1,5 +1,6 @@
-from django.contrib.auth.models import User
+# from django.contrib.auth.models import User
 from rest_framework import permissions, viewsets
+from .models import User
 
 from .serializers import UserSerializer
 
