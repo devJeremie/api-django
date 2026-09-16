@@ -22,7 +22,17 @@ from .permissions import (
 )
 from .serializers import UserCreationSerializer, UserLoginSerializer, UserSerializer
 
+
 class UserLoginView(views.APIView):
+    """Dead code: not registered in any urls.py (api/urls.py or users/urls.py).
+    JWT login actually goes through simplejwt's TokenObtainPairView at
+    /login. Left here from an earlier iteration; also depends on
+    UserLoginSerializer, which has its own bug (see serializers.py), and on
+    rest_framework_simplejwt.tokens.Token, which doesn't provide the
+    Token.objects.get_or_create(...) API used below (that's the DRF
+    authtoken API, a different package) — this view would not run as-is if
+    it were ever wired up.
+    """
     permission_classes = []
     serializer_class = UserLoginSerializer
 
@@ -36,28 +46,41 @@ class UserLoginView(views.APIView):
         },
     )
 
-    def post(self: views, request: views.Request) -> Response: 
+    def post(self: views, request: views.Request) -> Response:
         serializer = UserLoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        if serializer.is_valid() or True: 
+        if serializer.is_valid() or True:
             user = authenticate(
                 username = serializer.validated_data["username"],
                 password = serializer.validated_data["password"],
             )
 
-            if user: 
+            if user:
                 token, _ = Token.objects.get_or_create(user=user)
                 return Response({"token": token.key})
-            else: 
+            else:
                 return Response({"error": 'Invalid credentials'}, status=401)
         return Response(serializer.errors, status=400)
 
-class UserViewSet(viewsets.ViewSet): 
+
+class UserViewSet(viewsets.ViewSet):
+    """Plain ViewSet, not ModelViewSet — every action is implemented by hand
+    (queryset/serializer wiring, pagination, etc. that ModelViewSet would
+    normally give for free are all absent here). basename="user" has to be
+    passed explicitly at router registration in users/urls.py because of
+    this (see comment there).
+    """
     permission_classes = []
     serializer_class = UserSerializer
 
     def get_permissions(self):
+        """Per-action permission mapping — DRF calls this once per request
+        instead of reading a static `permission_classes` list, which is what
+        lets each action require a different Django model permission (see
+        permissions.py). Falls through to permission_classes = [] (i.e. no
+        permission required) for any action not listed here.
+        """
         if self.action == "create":
             self.permission_classes = [CanCreateUser]
         elif self.action == 'list':
@@ -85,6 +108,20 @@ class UserViewSet(viewsets.ViewSet):
     )
 
     def create(self, request):
+        """Creates a user and adds it to the auth.Group matching `role`
+        (admin/moderator/user — see migration 0002_create_default_groups,
+        which must have run or Group.objects.get() below raises
+        DoesNotExist).
+
+        Two known rough edges, left as-is:
+        - validate_password() runs before user.save(); a weak/common
+          password raises Django's ValidationError, which nothing here
+          catches, so it surfaces as an unhandled 500 instead of a clean 400.
+        - user.save() happens before the Group lookup, with no
+          transaction.atomic() wrapping the two — if the group lookup ever
+          fails again, the User row is still committed even though the
+          request returns 500 (i.e. a user can exist with no group).
+        """
         user = User(**request.data)
         validate_password(request.data.get("password", ""),user=user)
         user.set_password(request.data.get("password", ""))
@@ -116,7 +153,7 @@ class UserViewSet(viewsets.ViewSet):
                 group.user_set.add(user)
 
             return Response(serializer.data, status=201)
-        
+
         return Response(serializer.errors, status=400)
 
     @extend_schema(
@@ -129,6 +166,10 @@ class UserViewSet(viewsets.ViewSet):
     )
 
     def list(self, _):
+        # Returns the full queryset unpaginated — REST_FRAMEWORK's
+        # DEFAULT_PAGINATION_CLASS/PAGE_SIZE (settings.py) don't apply here,
+        # since that's wired through GenericAPIView.paginate_queryset(),
+        # which this hand-rolled action never calls.
         users = User.objects.all()
         serializer = UserSerializer(users, many=True)
 
@@ -143,7 +184,7 @@ class UserViewSet(viewsets.ViewSet):
             500: "Internal server error",
         },
     )
-    
+
     def retrieve(self, _, pk=None):
         user = get_object_or_404(User, id=pk)
         serializer = UserSerializer(user)
@@ -159,8 +200,10 @@ class UserViewSet(viewsets.ViewSet):
             500: "Internal server error",
         },
     )
-    
+
     def update(self, request, pk=None):
+        # NB: CanUpdateUser always denies (see permissions.py) — this action
+        # is effectively unreachable via the API today regardless of caller.
         user = get_object_or_404(User, id=pk)
         serializer = UserSerializer(user, data=request.data, partial=False)
 
@@ -168,7 +211,7 @@ class UserViewSet(viewsets.ViewSet):
             user = serializer.save()
 
             return Response(UserSerializer(user).data)
-        
+
         return Response(serializer.errors, status=400)
 
     @extend_schema(
@@ -183,6 +226,7 @@ class UserViewSet(viewsets.ViewSet):
     )
 
     def partial_update(self, request, pk=None):
+        # Same CanPartialUpdateUser issue as update() above.
         user = get_object_or_404(User, id=pk)
         serializer = UserSerializer(user, data=request.data, partial=True)
 
@@ -209,4 +253,3 @@ class UserViewSet(viewsets.ViewSet):
         user.delete()
 
         return Response(status=204)
-    

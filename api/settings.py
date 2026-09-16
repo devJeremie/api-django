@@ -29,8 +29,6 @@ DEBUG = True
 ALLOWED_HOSTS = []
 
 
-# Application definition
-
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -83,6 +81,9 @@ WSGI_APPLICATION = 'api.wsgi.application'
 #         'NAME': BASE_DIR / 'db.sqlite3',
 #     }
 # }
+# MySQL, configured via env vars so the exact same settings.py works both in
+# Docker (values come from .env: HOST=db, PORT=3306) and locally (falls back
+# to a MySQL instance on 127.0.0.1:3306 — no .env required for local dev).
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
@@ -144,16 +145,23 @@ MAILERS = {
 AUTH_USER_MODEL = "users.User"
 
 REST_FRAMEWORK = {
+    # Note: UserViewSet.list() builds its Response by hand and never calls
+    # paginate_queryset(), so this setting has no effect on /users/ today —
+    # it only applies to views that go through DRF's generic list handling.
     "DEFAULT_PAGINATION_CLASS":
     "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE":10,
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    # JWT for real API clients (Swagger's Authorize button, mobile/front-end
+    # clients). SessionAuthentication is what makes the browsable API's
+    # /api-auth/login/ (cookie-based) actually authenticate requests — without
+    # it, a successful session login still gets 401 on every endpoint.
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
         "rest_framework.authentication.SessionAuthentication",
     ),
+    # Global default; UserViewSet overrides this per-action via get_permissions().
     "DEFAULT_PERMISSION_CLASSES": (
-        
         "rest_framework.permissions.IsAuthenticated",
     ),
 }
