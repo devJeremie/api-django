@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -85,12 +86,12 @@ WSGI_APPLICATION = 'api.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'api-rest-django',#db name
-        'USER' : 'root', #db-user
-        'PASSWORD' : '', #db userpassword
-        'HOST' : '127.0.0.1',
-        'PORT' : '3306',
-    }    
+        'NAME': os.environ.get('DB_NAME', 'api-rest-django'),
+        'USER': os.environ.get('DB_USER', 'root'),
+        'PASSWORD': os.environ.get('DB_PASSWORD', ''),
+        'HOST': os.environ.get('DB_HOST', '127.0.0.1'),
+        'PORT': os.environ.get('DB_PORT', '3306'),
+    }
 }
 
 
@@ -151,7 +152,7 @@ REST_FRAMEWORK = {
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
     "DEFAULT_PERMISSION_CLASSES": (
-        #a confirmer avec ludo et jereome
+        
         "rest_framework.permissions.IsAuthenticated",
     ),
 }
