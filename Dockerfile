@@ -1,6 +1,6 @@
-# Dev image — runs manage.py runserver, not a production WSGI/ASGI server.
-# slim base keeps the image small; the apt packages below are only needed to
-# compile mysqlclient (a C extension) at pip-install time.
+# Image de dev — exécute manage.py runserver, pas un serveur WSGI/ASGI de
+# production. La base slim garde l'image légère ; les paquets apt ci-dessous
+# ne servent qu'à compiler mysqlclient (une extension C) lors du pip-install.
 FROM python:3.13-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -8,16 +8,17 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-# Dependances systeme necessaires pour compiler mysqlclient
+# Dépendances système nécessaires pour compiler mysqlclient
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     default-libmysqlclient-dev \
     pkg-config \
     && rm -rf /var/lib/apt/lists/*
 
-# requirements.txt copied and installed before the rest of the source so
-# Docker's layer cache is reused across builds as long as dependencies
-# haven't changed (source edits alone don't invalidate this layer).
+# requirements.txt est copié et installé avant le reste des sources pour
+# que le cache de layers de Docker soit réutilisé d'un build à l'autre tant
+# que les dépendances n'ont pas changé (les modifications du code source
+# seules n'invalident pas ce layer).
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
@@ -25,7 +26,7 @@ COPY . .
 
 EXPOSE 8000
 
-# 0.0.0.0, not 127.0.0.1 — the dev server must accept connections from
-# outside the container (i.e. from the host, via docker-compose's port
-# mapping), not just from localhost inside the container.
+# 0.0.0.0, pas 127.0.0.1 — le serveur de dev doit accepter les connexions
+# venant de l'extérieur du conteneur (c.-à-d. depuis l'hôte, via le mapping
+# de port de docker-compose), pas seulement depuis localhost à l'intérieur du conteneur.
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]

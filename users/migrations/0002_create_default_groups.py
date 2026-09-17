@@ -1,8 +1,8 @@
-# Seeds the three auth.Group rows that UserViewSet.create() (views.py)
-# expects to exist — it looks one up by name ("admin"/"moderator"/"user",
-# matching User.role) and attaches the new user to it. Without this
-# migration, POST /users/ fails with Group.DoesNotExist regardless of the
-# role requested. Runs automatically on `migrate`, in Docker and locally.
+# Crée les trois lignes auth.Group dont UserViewSet.create() (views.py)
+# a besoin — elle en recherche une par son nom ("admin"/"moderator"/"user",
+# correspondant à User.role) et y attache le nouvel utilisateur. Sans cette
+# migration, POST /users/ échoue avec Group.DoesNotExist quel que soit le
+# rôle demandé. S'exécute automatiquement lors du `migrate`, en Docker et en local.
 from django.db import migrations
 
 
@@ -24,7 +24,7 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        # reverse_code (delete_groups) makes this migration unappliable
-        # cleanly with `migrate users 0001` if ever needed.
+        # reverse_code (delete_groups) permet de désappliquer proprement
+        # cette migration avec `migrate users 0001` si jamais nécessaire.
         migrations.RunPython(create_groups, delete_groups),
     ]

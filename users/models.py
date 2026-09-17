@@ -3,14 +3,15 @@ from django.db.models import CharField
 
 
 class User(AbstractUser):
-    """Custom user model (AUTH_USER_MODEL = "users.User" in settings).
+    """Modèle utilisateur personnalisé (AUTH_USER_MODEL = "users.User" dans settings).
 
-    Adds a `role` field used purely as an app-level label — it drives which
-    auth.Group (admin/moderator/user, see migration 0002) a user is added to
-    on creation in UserViewSet.create(), and sets is_staff/is_superuser
-    accordingly. It has no bearing on Django's built-in permission checks by
-    itself; permissions.py checks concrete model permissions
-    (add_user/view_user/...) via has_perm(), not this field.
+    Ajoute un champ `role` utilisé purement comme étiquette au niveau de
+    l'application — il détermine à quel auth.Group (admin/moderator/user,
+    voir la migration 0002) un utilisateur est ajouté lors de sa création
+    dans UserViewSet.create(), et définit is_staff/is_superuser en
+    conséquence. Il n'a en soi aucune incidence sur les vérifications de
+    permissions intégrées de Django ; permissions.py vérifie les permissions
+    concrètes du modèle (add_user/view_user/...) via has_perm(), pas ce champ.
     """
 
     ADMIN = "admin"

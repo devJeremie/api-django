@@ -1,9 +1,9 @@
 """
-ASGI config for api project.
+Configuration ASGI pour le projet api.
 
-It exposes the ASGI callable as a module-level variable named ``application``.
+Expose l'appelable ASGI dans une variable de module nommée ``application``.
 
-For more information on this file, see
+Pour plus d'informations sur ce fichier, voir
 https://docs.djangoproject.com/en/6.1/howto/deployment/asgi/
 """
 

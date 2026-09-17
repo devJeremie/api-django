@@ -24,14 +24,14 @@ from .serializers import UserCreationSerializer, UserLoginSerializer, UserSerial
 
 
 class UserLoginView(views.APIView):
-    """Dead code: not registered in any urls.py (api/urls.py or users/urls.py).
-    JWT login actually goes through simplejwt's TokenObtainPairView at
-    /login. Left here from an earlier iteration; also depends on
-    UserLoginSerializer, which has its own bug (see serializers.py), and on
-    rest_framework_simplejwt.tokens.Token, which doesn't provide the
-    Token.objects.get_or_create(...) API used below (that's the DRF
-    authtoken API, a different package) — this view would not run as-is if
-    it were ever wired up.
+    """Code mort : non enregistré dans aucun urls.py (api/urls.py ou users/urls.py).
+    La connexion JWT passe en réalité par le TokenObtainPairView de simplejwt
+    sur /login. Laissé ici depuis une itération précédente ; dépend aussi de
+    UserLoginSerializer, qui a son propre bug (voir serializers.py), et de
+    rest_framework_simplejwt.tokens.Token, qui ne fournit pas l'API
+    Token.objects.get_or_create(...) utilisée ci-dessous (c'est l'API
+    authtoken de DRF, un package différent) — cette vue ne fonctionnerait
+    pas telle quelle si elle était un jour câblée.
     """
     permission_classes = []
     serializer_class = UserLoginSerializer
@@ -65,21 +65,21 @@ class UserLoginView(views.APIView):
 
 
 class UserViewSet(viewsets.ViewSet):
-    """Plain ViewSet, not ModelViewSet — every action is implemented by hand
-    (queryset/serializer wiring, pagination, etc. that ModelViewSet would
-    normally give for free are all absent here). basename="user" has to be
-    passed explicitly at router registration in users/urls.py because of
-    this (see comment there).
+    """Simple ViewSet, pas ModelViewSet — chaque action est implémentée à la
+    main (le câblage queryset/serializer, la pagination, etc. que ModelViewSet
+    fournirait normalement gratuitement sont tous absents ici). basename="user"
+    doit être passé explicitement lors de l'enregistrement du router dans
+    users/urls.py à cause de cela (voir le commentaire à cet endroit).
     """
     permission_classes = []
     serializer_class = UserSerializer
 
     def get_permissions(self):
-        """Per-action permission mapping — DRF calls this once per request
-        instead of reading a static `permission_classes` list, which is what
-        lets each action require a different Django model permission (see
-        permissions.py). Falls through to permission_classes = [] (i.e. no
-        permission required) for any action not listed here.
+        """Mappage des permissions par action — DRF appelle ceci une fois par
+        requête au lieu de lire une liste statique `permission_classes`, ce
+        qui permet à chaque action d'exiger une permission de modèle Django
+        différente (voir permissions.py). Retombe sur permission_classes = []
+        (c.-à-d. aucune permission requise) pour toute action non listée ici.
         """
         if self.action == "create":
             self.permission_classes = [CanCreateUser]
@@ -108,19 +108,21 @@ class UserViewSet(viewsets.ViewSet):
     )
 
     def create(self, request):
-        """Creates a user and adds it to the auth.Group matching `role`
-        (admin/moderator/user — see migration 0002_create_default_groups,
-        which must have run or Group.objects.get() below raises
-        DoesNotExist).
+        """Crée un utilisateur et l'ajoute à l'auth.Group correspondant à
+        `role` (admin/moderator/user — voir la migration
+        0002_create_default_groups, qui doit avoir été exécutée sinon
+        Group.objects.get() ci-dessous lève DoesNotExist).
 
-        Two known rough edges, left as-is:
-        - validate_password() runs before user.save(); a weak/common
-          password raises Django's ValidationError, which nothing here
-          catches, so it surfaces as an unhandled 500 instead of a clean 400.
-        - user.save() happens before the Group lookup, with no
-          transaction.atomic() wrapping the two — if the group lookup ever
-          fails again, the User row is still committed even though the
-          request returns 500 (i.e. a user can exist with no group).
+        Deux points connus laissés tels quels :
+        - validate_password() s'exécute avant user.save() ; un mot de passe
+          faible/courant lève une ValidationError de Django, que rien ici
+          n'intercepte, donc cela remonte comme un 500 non géré au lieu d'un
+          400 propre.
+        - user.save() a lieu avant la recherche du Group, sans
+          transaction.atomic() englobant les deux — si la recherche du
+          groupe échoue à nouveau, la ligne User est quand même validée même
+          si la requête renvoie 500 (c.-à-d. qu'un utilisateur peut exister
+          sans groupe).
         """
         user = User(**request.data)
         validate_password(request.data.get("password", ""),user=user)
@@ -144,7 +146,7 @@ class UserViewSet(viewsets.ViewSet):
                 group = Group.objects.get(name="moderator")
                 group.user_set.add(user)
 
-            else: #User role is USER
+            else: # Le rôle de l'utilisateur est USER
                 user.is_staff = False
                 user.is_superuser = False
                 user.save()
@@ -166,10 +168,10 @@ class UserViewSet(viewsets.ViewSet):
     )
 
     def list(self, _):
-        # Returns the full queryset unpaginated — REST_FRAMEWORK's
-        # DEFAULT_PAGINATION_CLASS/PAGE_SIZE (settings.py) don't apply here,
-        # since that's wired through GenericAPIView.paginate_queryset(),
-        # which this hand-rolled action never calls.
+        # Renvoie le queryset complet sans pagination — les DEFAULT_PAGINATION_CLASS/
+        # PAGE_SIZE de REST_FRAMEWORK (settings.py) ne s'appliquent pas ici,
+        # car cela passe par GenericAPIView.paginate_queryset(), que cette
+        # action écrite à la main n'appelle jamais.
         users = User.objects.all()
         serializer = UserSerializer(users, many=True)
 
@@ -202,8 +204,8 @@ class UserViewSet(viewsets.ViewSet):
     )
 
     def update(self, request, pk=None):
-        # NB: CanUpdateUser always denies (see permissions.py) — this action
-        # is effectively unreachable via the API today regardless of caller.
+        # NB : CanUpdateUser refuse toujours (voir permissions.py) — cette
+        # action est aujourd'hui effectivement inatteignable via l'API, quel que soit l'appelant.
         user = get_object_or_404(User, id=pk)
         serializer = UserSerializer(user, data=request.data, partial=False)
 
@@ -226,7 +228,7 @@ class UserViewSet(viewsets.ViewSet):
     )
 
     def partial_update(self, request, pk=None):
-        # Same CanPartialUpdateUser issue as update() above.
+        # Même problème CanPartialUpdateUser que update() ci-dessus.
         user = get_object_or_404(User, id=pk)
         serializer = UserSerializer(user, data=request.data, partial=True)
 

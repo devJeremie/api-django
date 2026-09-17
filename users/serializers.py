@@ -5,11 +5,12 @@ from .models import User
 
 
 class UserSerializer(serializers.ModelSerializer):
-    """Read/write representation used for list/retrieve/update responses.
+    """Représentation lecture/écriture utilisée pour les réponses list/retrieve/update.
 
-    No `password` field — this is intentional (never echo password data back),
-    but it also means UserSerializer can't be used to set a password; that's
-    handled separately in UserViewSet.create() via set_password().
+    Pas de champ `password` — c'est intentionnel (ne jamais renvoyer les données
+    de mot de passe), mais cela signifie aussi que UserSerializer ne peut pas
+    servir à définir un mot de passe ; c'est géré séparément dans
+    UserViewSet.create() via set_password().
     """
     class Meta:
         model = User
@@ -29,11 +30,11 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class UserCreationSerializer(serializers.ModelSerializer):
-    """Input shape documented for POST /users/ in the OpenAPI schema
-    (used via @extend_schema in views.py) — UserViewSet.create() does NOT
-    actually instantiate/validate against this serializer, it builds a bare
-    User(**request.data) instead. Keep the two in sync manually if either
-    changes.
+    """Forme d'entrée documentée pour POST /users/ dans le schéma OpenAPI
+    (utilisée via @extend_schema dans views.py) — UserViewSet.create()
+    n'instancie/ne valide PAS réellement via ce serializer, il construit
+    un simple User(**request.data) à la place. Garder les deux synchronisés
+    manuellement si l'un des deux change.
     """
     class Meta:
         model = User
@@ -55,12 +56,12 @@ class UserCreationSerializer(serializers.ModelSerializer):
 
 
 class UserLoginSerializer(serializers.ModelSerializer):
-    # BUG: model/fields/extra_kwargs must live under a nested `class Meta`
-    # for a ModelSerializer to pick them up — as written, this class declares
-    # no fields at all, so is_valid() would pass without actually requiring
-    # username/password. Currently harmless because the only consumer,
-    # UserLoginView (views.py), is not wired into any urlpatterns — fix this
-    # if that view is ever revived.
+    # BUG : model/fields/extra_kwargs doivent être définis dans une classe
+    # `class Meta` imbriquée pour qu'un ModelSerializer les prenne en compte —
+    # tel qu'écrit, cette classe ne déclare aucun champ, donc is_valid()
+    # passerait sans réellement exiger username/password. Sans conséquence
+    # actuellement car le seul consommateur, UserLoginView (views.py), n'est
+    # câblé dans aucune urlpatterns — corriger ceci si cette vue est un jour réactivée.
     model = User
     fields = [
         "username",

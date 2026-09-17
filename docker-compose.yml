@@ -4,18 +4,18 @@ services:
     restart: unless-stopped
     env_file: .env
     ports:
-      # Host port 3307, not 3306: this machine already runs a local MySQL on
-      # 3306 for non-Docker dev (api/settings.py's default HOST/PORT), so the
-      # container's 3306 is republished on 3307 to avoid a bind conflict.
-      # Internally, `web` still reaches this service on port 3306 (Docker's
-      # internal network is unaffected by the host-side mapping) — see
-      # DB_HOST/DB_PORT in .env.
+      # Port hôte 3307, pas 3306 : cette machine fait déjà tourner un MySQL
+      # local sur 3306 pour le dev hors Docker (HOST/PORT par défaut dans
+      # api/settings.py), donc le 3306 du conteneur est republié sur 3307
+      # pour éviter un conflit de bind. En interne, `web` accède toujours à
+      # ce service sur le port 3306 (le réseau interne de Docker n'est pas
+      # affecté par le mapping côté hôte) — voir DB_HOST/DB_PORT dans .env.
       - "3307:3306"
     volumes:
       - mysql_data:/var/lib/mysql
-    # `web` waits for this healthcheck (depends_on below) instead of just
-    # "container started" — MySQL takes a few seconds after start before
-    # it's actually ready to accept connections.
+    # `web` attend ce healthcheck (depends_on ci-dessous) plutôt que juste
+    # "conteneur démarré" — MySQL met quelques secondes après le démarrage
+    # avant d'être réellement prêt à accepter des connexions.
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 5s
@@ -28,8 +28,9 @@ services:
     env_file: .env
     ports:
       - "8000:8000"
-    # Bind-mounts the whole project into the container so manage.py
-    # runserver's autoreload picks up source edits without an image rebuild.
+    # Monte tout le projet dans le conteneur (bind-mount) pour que
+    # l'autoreload de manage.py runserver détecte les modifications du code
+    # sans reconstruction d'image.
     volumes:
       - .:/app
     depends_on:
@@ -37,7 +38,8 @@ services:
         condition: service_healthy
 
 volumes:
-  # Named volume so MySQL data survives `docker-compose down` (only
-  # `down -v` removes it) — needed since MYSQL_ROOT_HOST (.env) only takes
-  # effect on first init of this volume; changing it later requires a reset.
+  # Volume nommé pour que les données MySQL survivent à `docker-compose down`
+  # (seul `down -v` le supprime) — nécessaire car MYSQL_ROOT_HOST (.env) ne
+  # prend effet qu'à la première initialisation de ce volume ; le modifier
+  # plus tard nécessite une réinitialisation.
   mysql_data:
